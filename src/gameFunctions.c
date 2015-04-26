@@ -53,11 +53,11 @@ void drawCharacter(Character* character)
 
 
 // Afficher l'avatar d'un personnage (en bas à droite)
-void drawAvatar(Color color)
+void drawAvatar(Color color, int number, float ratio)
 {
   glPushMatrix();
     glColor3ub(color.red, color.green, color.blue);
-    glTranslatef(20, -19, 0.);
+    glTranslatef(18*ratio-number*2, -18., 0.);
     glScalef(2., 2., 1.);
     drawSquare(1);
   glPopMatrix();
@@ -133,16 +133,52 @@ void moveCharacter(Character* character, int characterMoving, Direction motion, 
 
 
 // Sélectionner un personnage
-void selectACharacter(Character* availableCharacters[], int* whichCharacter, Character** selectedCharacter)
+void selectACharacter(Character* availableCharacters[], int* whichCharacter, Character** selectedCharacter, int nbCharacters)
 {
+  // Si tous les personnages sont arrivés à destination
+  int stillCharacter = 0, i;
+  for (i = 0; i < nbCharacters; ++i)
+  {
+    if (!isWhite(availableCharacters[i]))
+      stillCharacter++;
+  }
+  if (!stillCharacter)
+  {
+    printf("T'as gagné mon poulet\n");
+    return;
+  }
+
+  // Vérification de la sélectionnabilité (oui j'invente des mots) du personnage
+  while (isWhite(availableCharacters[*whichCharacter]))
+    *whichCharacter = *whichCharacter == nbCharacters - 1 ? 0 : *whichCharacter + 1;
+
+  // Sélection du personnage
 	*selectedCharacter = availableCharacters[*whichCharacter];
 
+  // Dessin du triangle au-dessus du personnage sélectionné
   float xPosition = (*selectedCharacter)->position.x;
   float yPosition = (*selectedCharacter)->position.y + (*selectedCharacter)->height / 2 + 0.5;
   drawTriangle(xPosition, yPosition);
-
-  drawTriangle();
 }
+
+
+// Dessiner un triangle au-dessus de l'avatar du personnage sélectionné
+void selectAvatar(int whichCharacter, float ratio)
+{
+  drawTriangle(18*ratio - whichCharacter*2, -16.5);
+}
+
+
+// Indique si un personnage est blanc (retourne 1) ou non (retourne 0)
+int isWhite(Character* character)
+{
+  if (character->color.red == 255 && 
+    character->color.green == 255 && 
+    character->color.blue == 255)
+    return 1;
+  return 0;
+}
+
 
 // Dessine un triangle aux positions x et y données
 void drawTriangle(float xPosition, float yPosition)
@@ -160,7 +196,7 @@ void drawTriangle(float xPosition, float yPosition)
 
 
 // Atteindre la position finale d'un personnage
-void reachFinalPosition(Character* selectedCharacter, Character* availableCharacters[], int* whichCharacter)
+void reachFinalPosition(Character* selectedCharacter, Character* availableCharacters[], int* whichCharacter, int nbCharacters)
 {
   float characterRight = selectedCharacter->position.x + selectedCharacter->width/2;
   float characterLeft = selectedCharacter->position.x - selectedCharacter->width/2;
@@ -171,16 +207,25 @@ void reachFinalPosition(Character* selectedCharacter, Character* availableCharac
     // Modification de la couleur du personnage
     selectedCharacter->color = setColor(255, 255, 255);
 
-    // Suppression du personnage dans le tableau
-    availableCharacters[*whichCharacter] = NULL;
-
-    *whichCharacter += 1;
+    // Sélection du personnage suivant
+    *whichCharacter = *whichCharacter == nbCharacters - 1 ? 0 : *whichCharacter + 1;
   }
+}
 
 
-  /*while (availableCharacters[*whichCharacter] == NULL)
-  {
-    *whichCharacter += 1;
-    *whichCharacter = *whichCharacter == 1 ? 0 : *whichCharacter + 1;
-  }*/
+// Bouger la caméra de manière douce et agréable, en toute sérénité
+// (Bon c'est pas encore ça)
+void moveCamera(Point* cameraPosition, Character* selectedCharacter, float ratio)
+{
+  // Déplacement sur l'axe des x
+  if (cameraPosition->x + selectedCharacter->position.x < -0.5*ratio)
+    cameraPosition->x += 0.5*ratio;
+  else if (cameraPosition->x + selectedCharacter->position.x > 0.5*ratio)
+    cameraPosition->x -= 0.5*ratio;  
+
+  // Déplacement sur l'axe des y
+  if (cameraPosition->y < -selectedCharacter->position.y - 0.5)
+    cameraPosition->y += 0.5;
+  else if (cameraPosition->y > -selectedCharacter->position.y - 0.5)
+    cameraPosition->y -= 0.5;
 }

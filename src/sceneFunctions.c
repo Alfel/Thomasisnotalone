@@ -8,25 +8,25 @@
 
 
 
-void reshape(float windowWidth, float windowHeight)
+void reshape(float windowWidth, float windowHeight, float* ratio)
 {
-	float ratio = windowWidth / windowHeight;
+	*ratio = windowWidth / windowHeight;
 
 	glViewport(0, 0, windowWidth, windowHeight);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluOrtho2D(-20*ratio, 20*ratio, -20., 20.);
+	gluOrtho2D(-20*(*ratio), 20*(*ratio), -20., 20.);
 }
 
 
-void setVideoMode(float windowWidth, float windowHeight)
+void setVideoMode(float windowWidth, float windowHeight, float* ratio)
 {
 	if (NULL == SDL_SetVideoMode(windowWidth, windowHeight, BIT_PER_PIXEL, SDL_OPENGL | SDL_RESIZABLE))
 	{
 		fprintf(stderr, "Impossible d'ouvrir la fenetre. Fin du programme.\n");
 		exit(EXIT_FAILURE);
 	}
-  reshape(windowWidth, windowHeight);
+  reshape(windowWidth, windowHeight, ratio);
 }
 
 
@@ -67,16 +67,12 @@ Obstacle* createObstacle(float width, float height, Point position)
 
 
 // Afficher les obstacles
-void drawObstacles(Obstacle* obstacles[], int size)
+void drawObstacle(Obstacle* obstacle)
 {
-	int i;
-	for (i = 0; i < size; i++)
-	{
-		glPushMatrix();
-	  	glColor3ub(255, 255, 255);
-	  	glTranslatef(obstacles[i]->position.x, obstacles[i]->position.y, 0.);
-	  	glScalef(obstacles[i]->width, obstacles[i]->height, 1.);
-	  	drawSquare(1);
-	  glPopMatrix();
-	}
+	glPushMatrix();
+	  glColor3ub(255, 255, 255);
+	  glTranslatef(obstacle->position.x, obstacle->position.y, 0.);
+	  glScalef(obstacle->width, obstacle->height, 1.);
+	  drawSquare(1);
+	glPopMatrix();
 }

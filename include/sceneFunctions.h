@@ -1,39 +1,36 @@
 #ifndef __SCENEFUNCTIONS__H
 #define __SCENEFUNCTIONS__H
 
-typedef struct Point Point;
-struct Point
+typedef struct Point
 {
 	float x;
 	float y;
-};
+} Point;
 
-typedef struct Color Color;
-struct Color
+typedef struct Color
 {
 	int red;
 	int green;
 	int blue;
-};
+} Color;
 
-typedef struct Obstacle Obstacle;
-struct Obstacle
+typedef struct Obstacle
 {
 	float width;
 	float height;
 	Point position;
-};
+} Obstacle;
 
 static const unsigned int BIT_PER_PIXEL = 32;
 static const Uint32 FRAMERATE_MILLISECONDS = 1000 / 60;
 
-void reshape(float windowWidth, float windowHeight);
-void setVideoMode(float windowWidth, float windowHeight);
+void reshape(float windowWidth, float windowHeight, float* ratio);
+void setVideoMode(float windowWidth, float windowHeight, float* ratio);
 
 Point setPosition(float x, float y);
 Color setColor(int red, int green, int blue);
 
 Obstacle* createObstacle(float width, float height, Point position);
-void drawObstacles(Obstacle* obstacles[], int size);
+void drawObstacle(Obstacle* obstacle);
 
 #endif

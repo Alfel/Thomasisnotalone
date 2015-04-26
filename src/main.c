@@ -14,6 +14,7 @@ int main(int argc, char** argv)
   // Gestion de la fenêtre
   float windowWidth  = 1920;
   float windowHeight = 1080;
+  float ratio;
 
   if (-1 == SDL_Init(SDL_INIT_VIDEO))
   {
@@ -21,10 +22,12 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
 
-  setVideoMode(windowWidth, windowHeight);
+  setVideoMode(windowWidth, windowHeight, &ratio);
   SDL_WM_SetCaption("Thomas is not alone", NULL);
 
   SDL_EnableKeyRepeat(100, 100);
+
+  // (Ouais c'est un peu le bordel désolé je te ferai des cookies si tu veux)
 
   // Variables d'initialisation des personnages
   int nbCharacters = 2;
@@ -35,8 +38,8 @@ int main(int argc, char** argv)
 
   // Variables d'initialisation des obstacles
   Obstacle* obstaclesMap[3];
-  obstaclesMap[0] = createObstacle(10., 7., setPosition(0, -10));
-  obstaclesMap[1] = createObstacle(20., 12., setPosition(-25., -10));
+  obstaclesMap[0] = createObstacle(10., 7., setPosition(30, -10));
+  obstaclesMap[1] = createObstacle(20., 12., setPosition(-35., -10));
   obstaclesMap[2] = createObstacle(80., 5., setPosition(-50., -20));
 
 
@@ -49,6 +52,10 @@ int main(int argc, char** argv)
   int characterMoving = 0;
   float xMoving = 0;
   Direction motion;
+  int i;
+
+  // Position caméra
+  Point cameraPosition = setPosition(-selectedCharacter->position.x, -selectedCharacter->position.y);
 
 
   int loop = 1;
@@ -63,19 +70,29 @@ int main(int argc, char** argv)
 
     glMatrixMode(GL_MODELVIEW);
 
+    glPushMatrix();
+    moveCamera(&cameraPosition, selectedCharacter, ratio);
+    glTranslatef(cameraPosition.x, cameraPosition.y, 0.);
     moveCharacter(selectedCharacter, characterMoving, motion, &xMoving, obstaclesMap, 3);
-
-    selectACharacter(availableCharacters, &whichCharacter, &selectedCharacter);
-
-    reachFinalPosition(selectedCharacter, availableCharacters, &whichCharacter);
-
-    drawObstacles(obstaclesMap, 3);
-    drawCharacter(availableCharacters[0]);
-    drawCharacter(availableCharacters[1]);
-    drawAvatar(colors[0]);
-    drawFinalPosition(availableCharacters[0]);
-    drawFinalPosition(availableCharacters[1]);
+    selectACharacter(availableCharacters, &whichCharacter, &selectedCharacter, nbCharacters);
+    reachFinalPosition(selectedCharacter, availableCharacters, &whichCharacter, nbCharacters);
     
+    for (i = 0; i < 3; ++i)
+      drawObstacle(obstaclesMap[i]);
+
+    for (i = 0; i < nbCharacters; ++i)
+    {
+      drawCharacter(availableCharacters[i]);
+      drawFinalPosition(availableCharacters[i]);
+    }
+    
+    glPopMatrix();
+
+    for (i = 0; i < nbCharacters; ++i)
+      drawAvatar(colors[i], i, ratio);
+
+    selectAvatar(whichCharacter, ratio);
+
     SDL_GL_SwapBuffers();
     /* ****** */    
 
@@ -94,7 +111,7 @@ int main(int argc, char** argv)
         case SDL_VIDEORESIZE:
         windowWidth  = event.resize.w;
         windowHeight = event.resize.h;
-        setVideoMode(windowWidth, windowHeight);
+        setVideoMode(windowWidth, windowHeight, &ratio);
         break;
 
         case SDL_KEYDOWN:
@@ -119,7 +136,7 @@ int main(int argc, char** argv)
 
           case SDLK_TAB:
           characterMoving = 0;
-          whichCharacter = whichCharacter == 1 ? 0 : whichCharacter + 1;
+          whichCharacter = whichCharacter == nbCharacters - 1 ? 0 : whichCharacter + 1;
           break;
 
           case SDLK_ESCAPE: 
