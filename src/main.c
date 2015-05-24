@@ -1,7 +1,9 @@
-//======================================
+//===============================================
 // main.c
-// Permet de démarrer le jeu (choisir le niveau)
-//======================================
+//-----------------------------------------------
+// Démarrage du jeu (choix du niveau)
+// Alexander FELLER - Nancy RADJAYA - 2015
+//===============================================
 
 
 #include <SDL/SDL.h>
@@ -10,8 +12,12 @@
 #include <GL/glu.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "sceneFunctions.h"
+
+#include "windowFunctions.h"
+#include "settingFunctions.h"
+#include "displayFunctions.h"
 #include "gameFunctions.h"
+#include "playingFunctions.h"
 
 #define NB_LEVELS 3
 
@@ -42,14 +48,14 @@ int main(int argc, char** argv)
   {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    showImage(currentImage, 1, ratio);
+    displayImage(currentImage, 1, ratio);
     
     // Le choix du niveau ne peut se faire que si l'écran d'accueil est passé
     if (level)
     {
       glPushMatrix();
         glRotatef(90., 0., 0., 1.);
-        drawTriangle(0-level, 0);
+        displayTriangle(0-level, 0);
       glPopMatrix();
     }
 
