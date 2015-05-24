@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -Wall 
-LIB = -lSDL -lGLU -lGL -lm  
+LIB = -lSDL -lGLU -lGL -lm -lSDL_image
 
-BIN = thomasisnotalone
+BIN = youarenotalone
 
 SRC_PATH = src
 OBJ_PATH = obj

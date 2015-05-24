@@ -33,4 +33,7 @@ Color setColor(int red, int green, int blue);
 Obstacle* createObstacle(float width, float height, Point position);
 void drawObstacle(Obstacle* obstacle);
 
+GLuint loadImage(const char imagePath[]);
+void showImage(GLuint imageName, int full, float ratio);
+
 #endif

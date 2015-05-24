@@ -3,6 +3,7 @@
 #include <GL/glu.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 #include "gameFunctions.h"
 
 
@@ -19,15 +20,17 @@ void drawSquare(int filled)
 
 
 // Créer un nouveau personnage
-Character* createCharacter(float width, float height, Color color, float maxSpeed, Point position, Point finalPosition)
+Character* createCharacter(float width, float height, Color color, State state, float maxSpeed, Point position, Point finalPosition)
 {
   Character* newCharacter = (Character*)calloc(1, sizeof(Character));
 
   newCharacter->width = width;
   newCharacter->height = height;
-
   newCharacter->color = color;
+  newCharacter->state = state;
 
+  newCharacter->xMoving = 0;
+  newCharacter->yMoving = 0;
   newCharacter->maxSpeed = maxSpeed;
 
   newCharacter->position.x = position.x;
@@ -76,10 +79,27 @@ void drawFinalPosition(Character* character)
 }
 
 
+// Faire sauter un personnage
+/*void jump(Character* character)
+{
+  character->state = ALOFT;
+}
+
+
+void gravity(Character* character)
+{
+  if (character->state == ALOFT)
+  {
+  }
+  character->yMoving += ;
+}*/
+
+
 // Déplacer un personnage
 void moveCharacter(Character* character, int characterMoving, Direction motion, float* xMoving, Obstacle* obstaclesMap[], int size)
 {
   const float SPACING = 0.1;
+  const float ALOFT_SPACING = 0.05;
 
   // Si la touche du clavier est enfoncée (déplacement)
   if (characterMoving)
@@ -113,22 +133,28 @@ void moveCharacter(Character* character, int characterMoving, Direction motion, 
     float ObstacleTop = obstaclesMap[i]->position.y + obstaclesMap[i]->height/2;
     float ObstacleBottom = obstaclesMap[i]->position.y - obstaclesMap[i]->height/2;
 
-    if (motion == LEFT)
-    {
-      if (ThomasLeft - *xMoving < ObstacleRight && 
+    if (ThomasLeft - *xMoving < ObstacleRight && 
         ThomasRight + *xMoving > ObstacleLeft && 
         ThomasTop > ObstacleBottom && 
         ThomasBottom < ObstacleTop)
+    {
+      if (motion == LEFT)
       {
         character->position.x = ObstacleRight + character->width/2;
         *xMoving = 0;
-        //*xMoving *= -1;
+      }
+
+      else if (motion == RIGHT)
+      {
+        character->position.x = ObstacleLeft - character->width/2;
+        *xMoving = 0;
       }
     }
   }
 
   // Positionnement du personnage
   character->position.x += *xMoving;
+  //printf("%f\n", character->position.x);
 }
 
 
@@ -144,7 +170,7 @@ void selectACharacter(Character* availableCharacters[], int* whichCharacter, Cha
   }
   if (!stillCharacter)
   {
-    printf("T'as gagné mon poulet\n");
+    //printf("T'as gagné mon poulet\n");
     return;
   }
 
@@ -215,17 +241,112 @@ void reachFinalPosition(Character* selectedCharacter, Character* availableCharac
 
 // Bouger la caméra de manière douce et agréable, en toute sérénité
 // (Bon c'est pas encore ça)
-void moveCamera(Point* cameraPosition, Character* selectedCharacter, float ratio)
+void moveCamera(Point* cameraPosition, Character* selectedCharacter, float movingRatio)
 {
   // Déplacement sur l'axe des x
-  if (cameraPosition->x + selectedCharacter->position.x < -0.5*ratio)
-    cameraPosition->x += 0.5*ratio;
-  else if (cameraPosition->x + selectedCharacter->position.x > 0.5*ratio)
-    cameraPosition->x -= 0.5*ratio;  
+  if (cameraPosition->x + selectedCharacter->position.x < -0.5)
+    cameraPosition->x += 0.5*movingRatio;
+  else if (cameraPosition->x + selectedCharacter->position.x > 0.5)
+    cameraPosition->x -= 0.5*movingRatio;
 
   // Déplacement sur l'axe des y
   if (cameraPosition->y < -selectedCharacter->position.y - 0.5)
     cameraPosition->y += 0.5;
   else if (cameraPosition->y > -selectedCharacter->position.y - 0.5)
     cameraPosition->y -= 0.5;
+}
+
+
+float getMovingRatio(Point cameraPosition, float xToReach, float yToReach)
+{
+  float xDistance = cameraPosition.x - xToReach;
+  float yDistance = cameraPosition.y - yToReach;
+
+  while (!fmod(xDistance, 10) && !fmod(yDistance, 10))
+  {
+    xDistance /= 10;
+    yDistance /= 10;
+  }
+
+  float movingRatio = fabs(xDistance / yDistance);
+  //printf("%f\n", movingRatio);
+  return movingRatio;
+}
+
+
+void startGame(int level, float ratio)
+{
+  Game game;
+  SDL_Event event;
+  int loop = 1, characterMoving = 0;
+  Direction motion;
+  float xMoving = 0;
+
+  char filePath[15] = {0};  
+  sprintf(filePath, "lvl/level%d.lvl", level);
+
+  printf("%s\n", filePath);
+
+  setGame(&game, filePath);
+  SDL_EnableKeyRepeat(100, 100);
+
+  while (loop)
+  {
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    loadGame(&game, ratio, &xMoving, characterMoving, motion);
+
+    SDL_GL_SwapBuffers();
+        
+    while (SDL_PollEvent(&event))
+    {
+      switch(event.type)
+      {
+        case SDL_QUIT:
+          loop = 0;
+          break;
+
+        case SDL_KEYDOWN:
+
+          switch(event.key.keysym.sym)
+          {
+            case SDLK_LEFT:
+            case 'q':
+            characterMoving = 1;
+            motion = LEFT;
+            break;
+
+            case SDLK_RIGHT:
+            case 'd':
+            characterMoving = 1;
+            motion = RIGHT;
+            break;
+
+            //case SDLK_UP:
+            //case 'z':
+            //int characterYMoving = 1;
+
+            case SDLK_TAB:
+            characterMoving = 0;
+            game.whichCharacter = game.whichCharacter == game.nbCharacters - 1 ? 0 : game.whichCharacter + 1;
+            break;
+
+            case SDLK_ESCAPE: 
+            loop = 0;
+            break;
+
+            default:
+            break;
+          }
+          break;
+
+        case SDL_KEYUP:
+          characterMoving = 0;
+          //characterYMoving = 0;
+
+        default:
+          break;
+      }
+    }
+  }
 }
