@@ -58,7 +58,7 @@ void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Dire
 //===============================================
 // Démarrer le jeu en fonction du niveau choisi
 //===============================================
-void startGame(int level, float ratio)
+void startGame(int level, float windowInfo[])
 {
   Game game;
   SDL_Event event;
@@ -66,17 +66,17 @@ void startGame(int level, float ratio)
   Direction motion;
   float xMoving = 0;
 
-  char filePath[15] = {0};  
-  sprintf(filePath, "lvl/level%d.lvl", level);
+  setGame(&game, level);
+  GLuint pattern = loadImage(game.pattern);
 
-  setGame(&game, filePath);
   SDL_EnableKeyRepeat(100, 100);
 
   while (loop)
   {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    loadGame(&game, ratio, &xMoving, characterMoving, motion);
+    displayImage(pattern, 1, windowInfo);
+    loadGame(&game, windowInfo[2], &xMoving, characterMoving, motion);
 
     SDL_GL_SwapBuffers();
         
@@ -86,6 +86,12 @@ void startGame(int level, float ratio)
       {
         case SDL_QUIT:
           loop = 0;
+          break;
+
+        case SDL_VIDEORESIZE:
+          windowInfo[0]  = event.resize.w;
+          windowInfo[1] = event.resize.h;
+          setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
           break;
 
         case SDL_KEYDOWN:
@@ -137,14 +143,22 @@ void startGame(int level, float ratio)
 //===============================================
 // Initialiser la scène de jeu selon le fichier correspondant au niveau choisi
 //===============================================
-void setGame(Game* newGame, const char filePath[])
+void setGame(Game* newGame, int level)
 {
   int i;
+
+  // Correspondance niveau <-> fichier correspondant
+  char filePath[15] = {0};  
+  sprintf(filePath, "lvl/level%d.lvl", level);
 
   // Ouverture du fichier (r pour read only)
   FILE* file = fopen(filePath, "r");
   if (!file)
+  {
+    fprintf(stderr, "File %s does not exist. End of program.\n", filePath);
     exit(EXIT_FAILURE);
+  }
+    
 
   // Récupération du nombre de personnages & allocation des tableaux en dépendant
   fscanf(file, "%d", &newGame->nbCharacters);
@@ -184,6 +198,9 @@ void setGame(Game* newGame, const char filePath[])
 
   // Fermeture du fichier
   fclose(file);
+
+  //char pattern[15] = {0};  
+  sprintf(newGame->pattern, "img/pattern%d.jpg", level);
 
   newGame->whichCharacter = 0;
   newGame->selectedCharacter = newGame->availableCharacters[newGame->whichCharacter];

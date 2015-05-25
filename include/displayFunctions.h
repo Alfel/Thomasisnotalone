@@ -19,7 +19,7 @@ void displayCharacter(Character* character);
 void displayFinalPosition(Character* character);
 void displayAvatar(Color color, int number, float ratio);
 void displayObstacle(Obstacle* obstacle);
-void displayImage(GLuint imageName, int full, float ratio);
+void displayImage(GLuint imageName, int full, float windowInfo[]);
 
 
 #endif

@@ -105,26 +105,36 @@ void displayObstacle(Obstacle* obstacle)
 //===============================================
 // Afficher une image sur tout l'écran de jeu (1) ou non (0)
 //===============================================
-void displayImage(GLuint imageName, int full, float ratio)
+void displayImage(GLuint imageName, int full, float windowInfo[])
 {
-  float xPosition = UNIT;
-
-  if (full)
-    xPosition*=ratio;
-
   // Activation & sélection texture
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, imageName);
 
+  float xPosition = UNIT, xRepetition = 1, yRepetition = 1;
+
+  if (full) // Image sur tout l'écran de jeu = texture qui se répète
+  {
+    xPosition *= windowInfo[2];
+
+    // Récupération de la largeur de la texture
+    GLint patternWidth;
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &patternWidth);
+    
+    // Calcul du nombre de répétitions
+    xRepetition = windowInfo[0]/patternWidth;
+    yRepetition = windowInfo[1]/patternWidth;
+  }
+
   // Dessin
   glBegin(GL_QUADS);
-    glTexCoord2f(0, 1);
+    glTexCoord2f(0, yRepetition);
     glVertex2f(-xPosition, -UNIT);
 
-    glTexCoord2f(1, 1);
+    glTexCoord2f(xRepetition, yRepetition);
     glVertex2f(xPosition, -UNIT);
 
-    glTexCoord2f(1, 0);
+    glTexCoord2f(xRepetition, 0);
     glVertex2f(xPosition, UNIT);
 
     glTexCoord2f(0, 0);

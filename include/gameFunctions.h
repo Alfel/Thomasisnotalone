@@ -21,13 +21,14 @@ typedef struct Game
 	Obstacle** obstaclesMap;
 	Color* charactersColor;
 	Color obstaclesColor;
+	char pattern[17];
 	Point cameraPosition;
 } Game;
 
 
 void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Direction motion);
-void startGame(int level, float ratio);
-void setGame(Game* newGame, const char filePath[]);
+void startGame(int level, float windowInfo[]);
+void setGame(Game* newGame, int level);
 void moveCamera(Point* cameraPosition, Character* selectedCharacter, float movingRatio);
 
 

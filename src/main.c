@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 {
   SDL_Event event;
   int loop = 1, level = 0;
-  float windowWidth  = 1920, windowHeight = 1080, ratio;
+  float windowInfo[3] = {1920, 1080, 0};  // width, height, ratio
     
   if (-1 == SDL_Init(SDL_INIT_VIDEO))
   {
@@ -34,11 +34,11 @@ int main(int argc, char** argv)
     return EXIT_FAILURE;
   }
   
-  setVideoMode(windowWidth, windowHeight, &ratio);
+  setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
   SDL_WM_SetCaption("You are not alone", NULL);
 
   // Chargement des images
-  GLuint textureId = loadImage("img/lapin.jpg");
+  GLuint textureId = loadImage("img/menu.jpg");
   GLuint texture2 = loadImage("img/pattern.jpg");
   GLuint currentImage = textureId;
 
@@ -48,7 +48,7 @@ int main(int argc, char** argv)
   {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    displayImage(currentImage, 1, ratio);
+    displayImage(currentImage, 0, windowInfo);
     
     // Le choix du niveau ne peut se faire que si l'écran d'accueil est passé
     if (level)
@@ -70,9 +70,9 @@ int main(int argc, char** argv)
           break;
 
         case SDL_VIDEORESIZE:
-          windowWidth  = event.resize.w;
-          windowHeight = event.resize.h;
-          setVideoMode(windowWidth, windowHeight, &ratio);
+          windowInfo[0]  = event.resize.w;
+          windowInfo[1] = event.resize.h;
+          setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
           break;
 
         case SDL_KEYDOWN:
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
                 currentImage = texture2;
               }
               else
-                startGame(level, ratio);
+                startGame(level, windowInfo);
               break;
 
             case SDLK_DOWN:
