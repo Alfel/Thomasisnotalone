@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall 
 LIB = -lSDL -lGLU -lGL -lm -lSDL_image
 
-BIN = youarenotalone
+BIN = potterisnotalone
 
 SRC_PATH = src
 OBJ_PATH = obj

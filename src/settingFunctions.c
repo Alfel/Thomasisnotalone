@@ -44,18 +44,18 @@ Color setColor(int red, int green, int blue)
 //===============================================
 // Initialiser un nouveau personnage
 //===============================================
-Character* setCharacter(float width, float height, Color color, State state, float maxSpeed, Point position, Point finalPosition)
+Character* setCharacter(float width, float height, Color color, float jumpPower, Point position, Point finalPosition)
 {
   Character* newCharacter = (Character*)calloc(1, sizeof(Character));
 
   newCharacter->width = width;
   newCharacter->height = height;
   newCharacter->color = color;
-  newCharacter->state = state;
+  newCharacter->state = ALOFT;
 
-  newCharacter->xMoving = 0;
-  newCharacter->yMoving = 0;
-  newCharacter->maxSpeed = maxSpeed;
+  newCharacter->xSpeed = 0;
+  newCharacter->ySpeed = 0;
+  newCharacter->jumpPower = jumpPower;
 
   newCharacter->position.x = position.x;
   newCharacter->position.y = position.y;

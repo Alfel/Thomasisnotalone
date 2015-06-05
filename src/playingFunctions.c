@@ -11,6 +11,7 @@
 #include <GL/glu.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "playingFunctions.h"
 
@@ -18,27 +19,24 @@
 //===============================================
 // Sélectionner un personnage
 //===============================================
-void selectACharacter(Character* availableCharacters[], int* whichCharacter, Character** selectedCharacter, int nbCharacters)
+void selectACharacter(Character* availableCharacters[], int whichCharacter, Character** selectedCharacter, int nbCharacters, Bool* loop)
 {
   // Si tous les personnages sont arrivés à destination
-  int stillCharacter = 0, i;
+  Bool stillCharacter = FALSE;
+  int i;
   for (i = 0; i < nbCharacters; ++i)
   {
-    if (!isWhite(availableCharacters[i]))
-      stillCharacter++;
+    if (isWhite(availableCharacters[i]) == FALSE)
+      stillCharacter = TRUE;
   }
-  if (!stillCharacter)
+  if (stillCharacter == FALSE)
   {
-    //printf("T'as gagné mon poulet\n");
+    *loop = TRUE;
     return;
   }
 
-  // Vérification de la sélectionnabilité (oui j'invente des mots) du personnage
-  while (isWhite(availableCharacters[*whichCharacter]))
-    *whichCharacter = *whichCharacter == nbCharacters - 1 ? 0 : *whichCharacter + 1;
-
   // Sélection du personnage
-	*selectedCharacter = availableCharacters[*whichCharacter];
+	*selectedCharacter = availableCharacters[whichCharacter];
 
   // Dessin du triangle au-dessus du personnage sélectionné
   float xPosition = (*selectedCharacter)->position.x;
@@ -57,67 +55,147 @@ void selectAvatar(int whichCharacter, float ratio)
 
 
 //===============================================
-// Déplacer un personnage
+// Déplacer le personnage sélectionné vers la gauche
 //===============================================
-void moveCharacter(Character* character, int characterMoving, Direction motion, float* xMoving, Obstacle* obstaclesMap[], int size)
+void moveLeft(Character* character, Bool xMoving)
 {
-  const float SPACING = 0.1;
-  const float ALOFT_SPACING = 0.05;
+  if (xMoving == TRUE)
+    character->xSpeed = -0.5;
+    //character->xSpeed = (character->xSpeed < (SPACING - MAX_SPEED)) ? MAX_SPEED * -1 : character->xSpeed - SPACING;
+}
 
-  // Si la touche du clavier est enfoncée (déplacement)
-  if (characterMoving)
+
+//===============================================
+// Déplacer le personnage sélectionné vers la droite
+//===============================================
+void moveRight(Character* character, Bool xMoving)
+{
+  if (xMoving == TRUE)
+    character->xSpeed = 0.5;
+    //character->xSpeed = (character->xSpeed > (MAX_SPEED - SPACING)) ? MAX_SPEED : character->xSpeed + SPACING;
+}
+
+//===============================================
+// Appliquer la physique du jeu à tous les personnages
+//===============================================
+void moveCharacters(Character* characters[], Obstacle* obstaclesMap[], int nbCharacters, int nbObstacles, int whichCharacter, Bool* yMoving)
+{
+  float gravityForce = 0.03;
+
+  int i, j, k;
+
+  for (i = 0; i < nbCharacters; ++i)
   {
-    if (motion == LEFT)
-      *xMoving = *xMoving < (SPACING - character->maxSpeed) ? character->maxSpeed * -1 : *xMoving - SPACING;  
-    else if (motion == RIGHT)
-      *xMoving = *xMoving > (character->maxSpeed - SPACING) ? character->maxSpeed : *xMoving + SPACING;
-  }
-  
-  // Si la touche du clavier n'est plus enfoncée (décélération)
-  else if (*xMoving != 0)
-  {
-    if (motion == LEFT)
-      *xMoving = *xMoving > -SPACING ? 0 : *xMoving + 1.5*SPACING;
-    else if (motion == RIGHT)
-      *xMoving = *xMoving < SPACING ? 0 : *xMoving - 1.5*SPACING;
-  }
+    // Gravité
+    characters[i]->ySpeed = characters[i]->ySpeed < (gravityForce - MAX_SPEED) ? MAX_SPEED * -1 : characters[i]->ySpeed - gravityForce;
 
-  // Tests pour les collisions
-  int i;
-  for (i = 0; i < size; i++)
-  {
-    float ThomasLeft = character->position.x - character->width/2;
-    float ThomasRight = character->position.x + character->width/2;
-    float ThomasTop = character->position.y + character->height/2;
-    float ThomasBottom = character->position.y - character->height/2;
+    // Positionnement du personnage
+    characters[i]->position.x += characters[i]->xSpeed;
+    characters[i]->position.y += characters[i]->ySpeed;
 
-    float ObstacleLeft = obstaclesMap[i]->position.x - obstaclesMap[i]->width/2;
-    float ObstacleRight = obstaclesMap[i]->position.x + obstaclesMap[i]->width/2;
-    float ObstacleTop = obstaclesMap[i]->position.y + obstaclesMap[i]->height/2;
-    float ObstacleBottom = obstaclesMap[i]->position.y - obstaclesMap[i]->height/2;
-
-    if (ThomasLeft - *xMoving < ObstacleRight && 
-        ThomasRight + *xMoving > ObstacleLeft && 
-        ThomasTop > ObstacleBottom && 
-        ThomasBottom < ObstacleTop)
+    // Collisions avec les obstacles
+    for (j = 0; j < nbObstacles; ++j)
     {
-      if (motion == LEFT)
-      {
-        character->position.x = ObstacleRight + character->width/2;
-        *xMoving = 0;
-      }
+      float w = 0.5 * (obstaclesMap[j]->width + characters[i]->width);
+      float h = 0.5 * (obstaclesMap[j]->height + characters[i]->height);
+      float dx = obstaclesMap[j]->position.x - characters[i]->position.x;
+      float dy = obstaclesMap[j]->position.y - characters[i]->position.y;
 
-      else if (motion == RIGHT)
+      if (fabs(dx) <= w && fabs(dy) <= h)
       {
-        character->position.x = ObstacleLeft - character->width/2;
-        *xMoving = 0;
+        float wy = w * dy;
+        float hx = h * dx;
+
+        if (wy > hx)
+        {
+          if (wy > -hx)
+          {
+            // Collision par le haut
+            float obstacleBottom = obstaclesMap[j]->position.y - obstaclesMap[j]->height/2;
+            characters[i]->position.y = obstacleBottom - characters[i]->height/2;
+            characters[i]->ySpeed = 0.;
+          }
+          else
+          {
+            // Collision par la gauche
+            float obstacleRight = obstaclesMap[j]->position.x + obstaclesMap[j]->width/2;
+            characters[i]->position.x = obstacleRight + characters[i]->width/2;
+          }
+        }
+        else      
+        {
+          if (wy > -hx)
+          {
+            // Collision par la droite
+            float obstacleLeft = obstaclesMap[j]->position.x - obstaclesMap[j]->width/2;
+            characters[i]->position.x = obstacleLeft - characters[i]->width/2;
+          }
+          else
+          {
+            // Collision par le bas
+            float obstacleTop = obstaclesMap[j]->position.y + obstaclesMap[j]->height/2;
+            characters[i]->position.y = obstacleTop + characters[i]->height/2;
+            characters[i]->ySpeed = 0.;
+            *yMoving = FALSE;
+            characters[i]->state = GROUND;
+          }
+        }
+      }
+    }
+
+    // Collisions avec les autres personnages
+    for (k = 0; k < nbCharacters; ++k)
+    {
+      float w = 0.5 * (characters[k]->width + characters[i]->width);
+      float h = 0.5 * (characters[k]->height + characters[i]->height);
+      float dx = characters[k]->position.x - characters[i]->position.x;
+      float dy = characters[k]->position.y - characters[i]->position.y;
+
+      if (k != i && fabs(dx) <= w && fabs(dy) <= h)
+      {
+        float wy = w * dy;
+        float hx = h * dx;
+
+        if (wy > hx)
+        {
+          if (wy > -hx)
+          {
+            // Collision par le haut
+            float obstacleBottom = characters[k]->position.y - characters[k]->height/2;
+            characters[i]->position.y = obstacleBottom - characters[i]->height/2;
+            characters[i]->ySpeed = 0.;
+          }
+          else
+          {
+            // Collision par la gauche
+            float obstacleRight = characters[k]->position.x + characters[k]->width/2;
+            characters[i]->position.x = obstacleRight + characters[i]->width/2;
+          }
+        }
+                
+        else
+        {
+          if (wy > -hx)
+          {
+            // Collision par la droite
+            float obstacleLeft = characters[k]->position.x - characters[k]->width/2;
+            characters[i]->position.x = obstacleLeft - characters[i]->width/2;
+          }
+            
+          else
+          {
+            // Collision par le bas
+            float obstacleTop = characters[k]->position.y + characters[k]->height/2;
+            characters[i]->position.y = obstacleTop + characters[i]->height/2;
+            characters[i]->ySpeed = 0.;
+            characters[i]->state = GROUND;
+            if (i != whichCharacter)
+              characters[i]->xSpeed = characters[k]->xSpeed;
+          }
+        }
       }
     }
   }
-
-  // Positionnement du personnage
-  character->position.x += *xMoving;
-  //printf("%f\n", character->position.x);
 }
 
 
@@ -128,12 +206,21 @@ void reachFinalPosition(Character* selectedCharacter, Character* availableCharac
 {
   float characterRight = selectedCharacter->position.x + selectedCharacter->width/2;
   float characterLeft = selectedCharacter->position.x - selectedCharacter->width/2;
+  float characterTop = selectedCharacter->position.y + selectedCharacter->height/2;
+  float characterBottom = selectedCharacter->position.y - selectedCharacter->height/2;
 
   if (characterRight > selectedCharacter->finalPosition.x &&
-    characterLeft < selectedCharacter->finalPosition.x)
+    characterLeft < selectedCharacter->finalPosition.x &&
+    characterTop > selectedCharacter->finalPosition.y &&
+    characterBottom < selectedCharacter->finalPosition.y &&
+    isWhite(selectedCharacter) == FALSE)
   {
     // Modification de la couleur du personnage
-    selectedCharacter->color = setColor(255, 255, 255);
+    selectedCharacter->color = setColor(202, 210, 221);
+
+    // Mise à zéro de sa vitesse
+    selectedCharacter->xSpeed = 0;
+    selectedCharacter->ySpeed = 0;
 
     // Sélection du personnage suivant
     *whichCharacter = *whichCharacter == nbCharacters - 1 ? 0 : *whichCharacter + 1;
@@ -144,46 +231,22 @@ void reachFinalPosition(Character* selectedCharacter, Character* availableCharac
 //===============================================
 // Savoir si un personnage est blanc (1) ou non (0)
 //===============================================
-int isWhite(Character* character)
+Bool isWhite(Character* character)
 {
-  if (character->color.red == 255 && 
-    character->color.green == 255 && 
-    character->color.blue == 255)
-    return 1;
-  return 0;
+  if (character->color.red == 202 && 
+    character->color.green == 210 && 
+    character->color.blue == 221)
+    return TRUE;
+  return FALSE;
 }
-
-
-/*float getMovingRatio(Point cameraPosition, float xToReach, float yToReach)
-{
-  float xDistance = cameraPosition.x - xToReach;
-  float yDistance = cameraPosition.y - yToReach;
-
-  while (!fmod(xDistance, 10) && !fmod(yDistance, 10))
-  {
-    xDistance /= 10;
-    yDistance /= 10;
-  }
-
-  float movingRatio = fabs(xDistance / yDistance);
-  //printf("%f\n", movingRatio);
-  return movingRatio;
-}*/
-
-
 
 
 // Faire sauter un personnage
-/*void jump(Character* character)
+void jump(Character* character, Bool yMoving)
 {
-  character->state = ALOFT;
-}
-
-
-void gravity(Character* character)
-{
-  if (character->state == ALOFT)
+  if (yMoving == TRUE && character->state == GROUND)
   {
+    character->ySpeed = character->jumpPower;
+    character->state = ALOFT;
   }
-  character->yMoving += ;
-}*/
+}

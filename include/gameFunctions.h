@@ -9,6 +9,7 @@
 #ifndef __GAME_FUNCTIONS__H
 #define __GAME_FUNCTIONS__H
 
+#include "windowFunctions.h"
 #include "settingFunctions.h"
 #include "playingFunctions.h"
 
@@ -26,10 +27,10 @@ typedef struct Game
 } Game;
 
 
-void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Direction motion);
-void startGame(int level, float windowInfo[]);
+void loadGame(Game* game, float ratio, Bool xMoving, Bool* yMoving, Bool* loop);
+void startGame(int level, Window* window);
 void setGame(Game* newGame, int level);
-void moveCamera(Point* cameraPosition, Character* selectedCharacter, float movingRatio);
+void moveCamera(Point* cameraPosition, Character* selectedCharacter);
 
 
 #endif

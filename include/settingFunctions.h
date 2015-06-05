@@ -12,9 +12,6 @@
 
 typedef enum State { GROUND, ALOFT } State;
 
-typedef enum Direction Direction;
-enum Direction { LEFT, RIGHT };
-
 
 typedef struct Point
 {
@@ -33,10 +30,10 @@ typedef struct Color
 
 typedef struct Character
 {
-	float width, height, xMoving, yMoving;
+	float width, height, xSpeed, ySpeed;
 	Color color;
 	State state;
-	float maxSpeed;
+	float jumpPower;
 	Point position, finalPosition;
 } Character;
 
@@ -51,7 +48,7 @@ typedef struct Obstacle
 
 Point setPosition(float x, float y);
 Color setColor(int red, int green, int blue);
-Character* setCharacter(float width, float height, Color color, State state, float maxSpeed, Point position, Point finalPosition);
+Character* setCharacter(float width, float height, Color color, float jumpPower, Point position, Point finalPosition);
 Obstacle* setObstacle(float width, float height, Point position);
 GLuint loadImage(const char imagePath[]);
 

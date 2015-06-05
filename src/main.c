@@ -25,37 +25,41 @@
 int main(int argc, char** argv)
 {
   SDL_Event event;
-  int loop = 1, level = 0;
-  float windowInfo[3] = {1920, 1080, 0};  // width, height, ratio
-    
+  int level = 0;
+  
   if (-1 == SDL_Init(SDL_INIT_VIDEO))
   {
     fprintf(stderr, "SDL initialization not working. End of program.\n");
     return EXIT_FAILURE;
   }
-  
-  setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
-  SDL_WM_SetCaption("You are not alone", NULL);
+
+  Window window = setWindow();
+
+  setVideoMode(&window);
+  SDL_WM_SetCaption("Potter is not alone", NULL);
+  glClearColor(17./256, 22./256, 37./256, 1.);
 
   // Chargement des images
-  GLuint textureId = loadImage("img/menu.jpg");
-  GLuint texture2 = loadImage("img/pattern.jpg");
-  GLuint currentImage = textureId;
+  GLuint welcomeScreen = loadImage("img/welcome.jpg");
+  GLuint levelsScreen = loadImage("img/levels.jpg");
+  GLuint currentImage = welcomeScreen;
 
   SDL_EnableKeyRepeat(100, 100);
   
-  while (loop)
+  while (window.loop == TRUE)
   {
     glClear(GL_COLOR_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
 
-    displayImage(currentImage, 0, windowInfo);
+    displayImage(currentImage, FALSE, window);
     
     // Le choix du niveau ne peut se faire que si l'écran d'accueil est passé
-    if (level)
+    if (level != 0)
     {
+      // Affichage triangle
       glPushMatrix();
         glRotatef(90., 0., 0., 1.);
-        displayTriangle(0-level, 0);
+        displayTriangle(5-level*3.67, 7.5);
       glPopMatrix();
     }
 
@@ -66,40 +70,48 @@ int main(int argc, char** argv)
       switch(event.type)
       {
         case SDL_QUIT:
-          loop = 0;
+          window.loop = FALSE;
           break;
 
         case SDL_VIDEORESIZE:
-          windowInfo[0]  = event.resize.w;
-          windowInfo[1] = event.resize.h;
-          setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
+          window.width  = (event.resize.w < 800) ? 800 : event.resize.w;
+          window.height = (event.resize.h < 600) ? 600  : event.resize.h;
+          setVideoMode(&window);
           break;
 
         case SDL_KEYDOWN:
           switch(event.key.keysym.sym)
           {
-            case SDLK_ESCAPE: 
-              loop = 0;
+            case SDLK_ESCAPE:
+              window.loop = FALSE;
+              break;
+
+            case 'f':
+              window.fullScreen = (window.fullScreen == TRUE) ? FALSE : TRUE;
+              setVideoMode(&window);
               break;
 
             case SDLK_RETURN:
-              if (!level)
+              if (level == 0)
               {
                 level = 1;
-                currentImage = texture2;
+                glDeleteTextures(1, &welcomeScreen);
+                currentImage = levelsScreen;
               }
               else
-                startGame(level, windowInfo);
-              break;
-
-            case SDLK_DOWN:
-              if (level)
-                level = (level == NB_LEVELS) ? 1 : level + 1;
+                startGame(level, &window);
               break;
 
             case SDLK_UP:
-              if (level)
+            case 'z':
+              if (level != 0)
                 level = (level == 1) ? NB_LEVELS : level - 1;
+              break;
+
+            case SDLK_DOWN:
+            case 's':
+              if (level != 0)
+                level = (level == NB_LEVELS) ? 1 : level + 1;
               break;
 
             default:
@@ -112,8 +124,8 @@ int main(int argc, char** argv)
       }
     }
   }
-    
-  glDeleteTextures(1, &textureId);
+  
+  glDeleteTextures(1, &levelsScreen);
     
   SDL_Quit();
 

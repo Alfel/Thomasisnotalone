@@ -13,11 +13,18 @@
 #include "displayFunctions.h"
 
 
-void selectACharacter(Character* availableCharacters[], int* whichCharacter, Character** selectedCharacter, int nbCharacters);
+#define MAX_SPEED 2
+#define SPACING 0.2
+
+
+void selectACharacter(Character* availableCharacters[], int whichCharacter, Character** selectedCharacter, int nbCharacters, Bool* loop);
 void selectAvatar(int whichCharacter, float ratio);
-void moveCharacter(Character* character, int characterMoving, Direction motion, float* xMoving, Obstacle* obstaclesMap[], int size);
+void moveCharacters(Character* availableCharacters[], Obstacle* obstaclesMap[], int nbCharacters, int nbObstacles, int whichCharacter, Bool* yMoving);
 void reachFinalPosition(Character* selectedCharacter, Character* availableCharacters[], int* whichCharacter, int nbCharacters);
-int isWhite(Character* character);
+Bool isWhite(Character* character);
+void jump(Character* character, Bool yMoving);
+void moveLeft(Character* character, Bool xMoving);
+void moveRight(Character* character, Bool xMoving);
 
 
 #endif

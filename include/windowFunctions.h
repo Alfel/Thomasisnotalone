@@ -10,13 +10,24 @@
 #define __WINDOW_FUNCTIONS__H
 
 
-static const unsigned int BIT_PER_PIXEL = 32;
-static const Uint32 FRAMERATE_MILLISECONDS = 1000 / 60;
-static const int UNIT = 20;
+#define BIT_PER_PIXEL 32
+#define FRAMERATE_MILLISECONDS 1000 / 60
+#define UNIT 20
 
 
+typedef enum Bool { FALSE, TRUE } Bool;
+
+
+typedef struct Window
+{
+	float screenWidth, screenHeight, width, height, ratio;
+	Bool loop, fullScreen;
+} Window;
+
+
+Window setWindow();
 void reshape(float windowWidth, float windowHeight, float* ratio);
-void setVideoMode(float windowWidth, float windowHeight, float* ratio);
+void setVideoMode(Window* window);
 
 
 #endif

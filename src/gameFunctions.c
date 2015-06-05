@@ -19,20 +19,19 @@
 //===============================================
 // Charger et afficher la scène de jeu
 //===============================================
-void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Direction motion)
+void loadGame(Game* game, float ratio, Bool xMoving, Bool* yMoving, Bool* loop)
 {
   int i;
-  float movingRatio = 1;
-
 
   glPushMatrix();
-    
-    moveCamera(&game->cameraPosition, game->selectedCharacter, movingRatio);
+
+    moveCamera(&game->cameraPosition, game->selectedCharacter);
     glTranslatef(game->cameraPosition.x, game->cameraPosition.y, 0.);
-    moveCharacter(game->selectedCharacter, characterMoving, motion, xMoving, game->obstaclesMap, game->nbObstacles);
-    selectACharacter(game->availableCharacters, &game->whichCharacter, &game->selectedCharacter, game->nbCharacters);
+
+    moveCharacters(game->availableCharacters, game->obstaclesMap, game->nbCharacters, game->nbObstacles, game->whichCharacter, yMoving);
+    selectACharacter(game->availableCharacters, game->whichCharacter, &game->selectedCharacter, game->nbCharacters, loop);
     reachFinalPosition(game->selectedCharacter, game->availableCharacters, &game->whichCharacter, game->nbCharacters);
-    
+
     // Affichage des obstacles
     glColor3ub(game->obstaclesColor.red, game->obstaclesColor.green, game->obstaclesColor.blue);
     for (i = 0; i < game->nbObstacles; ++i)
@@ -47,7 +46,6 @@ void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Dire
     
   glPopMatrix();
 
-
   // Affichage des petits avatars des personnages en bas à droite
   for (i = 0; i < game->nbCharacters; ++i)
     displayAvatar(game->charactersColor[i], i, ratio);
@@ -58,26 +56,32 @@ void loadGame(Game* game, float ratio, float* xMoving, int characterMoving, Dire
 //===============================================
 // Démarrer le jeu en fonction du niveau choisi
 //===============================================
-void startGame(int level, float windowInfo[])
+void startGame(int level, Window* window)
 {
   Game game;
   SDL_Event event;
-  int loop = 1, characterMoving = 0;
-  Direction motion;
-  float xMoving = 0;
+  Bool loop = TRUE, controls = FALSE, xMoving = FALSE, yMoving = FALSE, completed = FALSE;
 
   setGame(&game, level);
+  GLuint controlsScreen = loadImage("img/controls.jpg");
+  GLuint completedScreen = loadImage("img/completed.jpg");
   GLuint pattern = loadImage(game.pattern);
 
-  SDL_EnableKeyRepeat(100, 100);
-
-  while (loop)
+  while (loop == TRUE)
   {
     glClear(GL_COLOR_BUFFER_BIT);
+    glMatrixMode(GL_MODELVIEW);
 
-    displayImage(pattern, 1, windowInfo);
-    loadGame(&game, windowInfo[2], &xMoving, characterMoving, motion);
-
+    if (controls == FALSE)
+      displayImage(controlsScreen, FALSE, *window);
+    else if (completed == TRUE)
+      displayImage(completedScreen, FALSE, *window);
+    else
+    {
+      displayImage(pattern, TRUE, *window);
+      loadGame(&game, window->ratio, xMoving, &yMoving, &completed);
+    }
+    
     SDL_GL_SwapBuffers();
         
     while (SDL_PollEvent(&event))
@@ -85,42 +89,75 @@ void startGame(int level, float windowInfo[])
       switch(event.type)
       {
         case SDL_QUIT:
-          loop = 0;
-          break;
+          window->loop = FALSE;
+          return;
 
         case SDL_VIDEORESIZE:
-          windowInfo[0]  = event.resize.w;
-          windowInfo[1] = event.resize.h;
-          setVideoMode(windowInfo[0], windowInfo[1], &windowInfo[2]);
+          window->width  = (event.resize.w < 800) ? 800 : event.resize.w;
+          window->height = (event.resize.h < 600) ? 600  : event.resize.h;
+          setVideoMode(window);
           break;
 
         case SDL_KEYDOWN:
 
           switch(event.key.keysym.sym)
           {
+            case SDLK_ESCAPE:
+              loop = FALSE;
+              break;
+
+            case 'f':
+              window->fullScreen = (window->fullScreen) ? FALSE : TRUE;
+              setVideoMode(window);
+              break;
+
+            case SDLK_RETURN:
+              if (controls == FALSE)
+              {
+                controls = TRUE;
+                glDeleteTextures(1, &controlsScreen);
+              }
+              else if (completed == TRUE)
+              {
+                loop = FALSE;
+              }
+              break;
+
             case SDLK_LEFT:
             case 'q':
-            characterMoving = 1;
-            motion = LEFT;
+              if (controls == TRUE)
+              {
+                xMoving = TRUE;
+                moveLeft(game.selectedCharacter, xMoving);
+              }
             break;
 
             case SDLK_RIGHT:
             case 'd':
-            characterMoving = 1;
-            motion = RIGHT;
+              if (controls == TRUE)
+              {
+                xMoving = TRUE;
+                moveRight(game.selectedCharacter, xMoving);
+              }
             break;
 
-            //case SDLK_UP:
-            //case 'z':
-            //int characterYMoving = 1;
+            case SDLK_UP:
+            case SDLK_SPACE:
+            case 'z':
+              if (controls == TRUE)
+              {
+                yMoving = TRUE;
+                jump(game.selectedCharacter, yMoving);
+              }
+            break;
 
             case SDLK_TAB:
-            characterMoving = 0;
-            game.whichCharacter = game.whichCharacter == game.nbCharacters - 1 ? 0 : game.whichCharacter + 1;
-            break;
-
-            case SDLK_ESCAPE: 
-            loop = 0;
+              if (controls == TRUE)
+              {
+                xMoving = FALSE;
+                yMoving = FALSE;
+                game.whichCharacter = (game.whichCharacter == game.nbCharacters - 1) ? 0 : game.whichCharacter + 1;
+              }
             break;
 
             default:
@@ -129,14 +166,19 @@ void startGame(int level, float windowInfo[])
           break;
 
         case SDL_KEYUP:
-          characterMoving = 0;
-          //characterYMoving = 0;
+          xMoving = FALSE;
+          yMoving = FALSE;
+          game.selectedCharacter->xSpeed = 0;
+          break;
 
         default:
           break;
       }
     }
   }
+
+  glDeleteTextures(1, &controlsScreen);
+
 }
 
 
@@ -172,10 +214,10 @@ void setGame(Game* newGame, int level)
   // Initialisation des personnages & stockage de leur couleur
   for (i = 0; i < newGame->nbCharacters; ++i)
   {
-    float width, height, maxSpeed, x, y, finalX, finalY;
-    int r, g, b, state;
-    fscanf(file, "%f %f %d %d %d %d %f %f %f %f %f", &width, &height, &r, &g, &b, &state, &maxSpeed, &x, &y, &finalX, &finalY);
-    newGame->availableCharacters[i] = setCharacter(width, height, setColor(r, g, b), (State)state, maxSpeed, setPosition(x, y), setPosition(finalX, finalY));
+    float width, height, jumpPower, x, y, finalX, finalY;
+    int r, g, b;
+    fscanf(file, "%f %f %d %d %d %f %f %f %f %f", &width, &height, &r, &g, &b, &jumpPower, &x, &y, &finalX, &finalY);
+    newGame->availableCharacters[i] = setCharacter(width, height, setColor(r, g, b), jumpPower, setPosition(x, y), setPosition(finalX, finalY));
     newGame->charactersColor[i] = setColor(r, g, b);
   }
 
@@ -214,17 +256,21 @@ void setGame(Game* newGame, int level)
 // Bouger la caméra de manière douce et agréable, en toute sérénité
 // (Bon c'est pas encore ça)
 //===============================================
-void moveCamera(Point* cameraPosition, Character* selectedCharacter, float movingRatio)
+void moveCamera(Point* cameraPosition, Character* selectedCharacter)
 {
+  float movingRatio = 1;
   // Déplacement sur l'axe des x
   if (cameraPosition->x + selectedCharacter->position.x < -0.5)
     cameraPosition->x += 0.5*movingRatio;
   else if (cameraPosition->x + selectedCharacter->position.x > 0.5)
     cameraPosition->x -= 0.5*movingRatio;
 
-  // Déplacement sur l'axe des y
-  if (cameraPosition->y < -selectedCharacter->position.y - 0.5)
-    cameraPosition->y += 0.5;
-  else if (cameraPosition->y > -selectedCharacter->position.y - 0.5)
-    cameraPosition->y -= 0.5;
+  // Déplacement sur l'axe des y (pas dans le cas où le personnage saute)
+  if (selectedCharacter->ySpeed == 0)
+  {
+    if (cameraPosition->y < -selectedCharacter->position.y - 0.5)
+      cameraPosition->y += 0.5;
+    else if (cameraPosition->y > -selectedCharacter->position.y - 0.5)
+      cameraPosition->y -= 0.5;
+  }
 }

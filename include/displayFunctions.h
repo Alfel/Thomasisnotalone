@@ -13,13 +13,13 @@
 #include "settingFunctions.h"
 
 
-void displaySquare(int filled);
+void displaySquare(Bool filled);
 void displayTriangle(float xPosition, float yPosition);
 void displayCharacter(Character* character);
 void displayFinalPosition(Character* character);
 void displayAvatar(Color color, int number, float ratio);
 void displayObstacle(Obstacle* obstacle);
-void displayImage(GLuint imageName, int full, float windowInfo[]);
+void displayImage(GLuint imageName, Bool full, Window window);
 
 
 #endif
